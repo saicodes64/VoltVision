@@ -1,8 +1,22 @@
-import { mockSavings } from '@/services/api';
+import { useState, useEffect } from 'react';
+import { api, type SavingsData } from '@/services/api';
 import { TreePine, TrendingDown, Leaf } from 'lucide-react';
 
 const SavingsSummary = () => {
-  const s = mockSavings;
+  const [s, setS] = useState<SavingsData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getSavings().then(data => { setS(data); setLoading(false); });
+  }, []);
+
+  if (loading || !s) {
+    return (
+      <div className="card-gradient rounded-xl border border-savings/20 p-6 glow-green animate-pulse">
+        <div className="h-52 rounded-lg bg-muted" />
+      </div>
+    );
+  }
 
   return (
     <div className="card-gradient rounded-xl border border-savings/20 p-6 glow-green">

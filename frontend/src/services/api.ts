@@ -1,4 +1,7 @@
-// Mock data and API simulation for VoltVision
+// VoltVision API Service — connects to FastAPI backend
+// Falls back to mock data if backend is unreachable
+
+const API_BASE = '/api';
 
 export interface HourlyData {
   hour: number;
@@ -48,12 +51,33 @@ export interface GridStress {
   percentage: number;
 }
 
-const generateHourlyData = (): HourlyData[] => {
+export interface DashboardSummary {
+  totalDailyUsage: number;
+  monthlyCost: number;
+  peakLoad: number;
+  monthlySavings: number;
+}
+
+export interface UsageAnalytics {
+  hourlyData: HourlyData[];
+  peakHours: PeakHour[];
+  gridStress: GridStress;
+  totalDailyUsage: number;
+  averageHourlyUsage: number;
+}
+
+export interface OptimizeResponse {
+  recommendation: Recommendation;
+  savings: SavingsData;
+}
+
+// ─── Mock Data (fallback) ───────────────────────────────
+
+const generateMockHourlyData = (): HourlyData[] => {
   const basePattern = [
     0.8, 0.6, 0.5, 0.4, 0.5, 0.7, 1.2, 2.1, 2.8, 3.2, 3.0, 2.6,
     2.4, 2.2, 2.5, 2.8, 3.5, 4.2, 4.8, 4.5, 3.8, 2.9, 1.8, 1.1
   ];
-
   return basePattern.map((val, i) => {
     const predicted = val + (Math.random() - 0.5) * 0.4;
     const gridLoad: 'low' | 'moderate' | 'high' = val > 4 ? 'high' : val > 2.5 ? 'moderate' : 'low';
@@ -68,79 +92,125 @@ const generateHourlyData = (): HourlyData[] => {
   });
 };
 
-export const mockHourlyData = generateHourlyData();
-
-export const mockPeakHours: PeakHour[] = [
-  { hour: '18:00 - 19:00', load: 4.8, gridStress: 'high' },
-  { hour: '19:00 - 20:00', load: 4.5, gridStress: 'high' },
-  { hour: '17:00 - 18:00', load: 4.2, gridStress: 'high' },
-];
-
-export const mockCostProjection: CostProjection = {
-  dailyCost: 186,
-  monthlyCost: 5580,
-  trend: 'up',
-  trendPercent: 12,
-  slabRisk: true,
+const mockFallback = {
+  hourlyData: generateMockHourlyData(),
+  peakHours: [
+    { hour: '18:00 - 19:00', load: 4.8, gridStress: 'high' as const },
+    { hour: '19:00 - 20:00', load: 4.5, gridStress: 'high' as const },
+    { hour: '17:00 - 18:00', load: 4.2, gridStress: 'high' as const },
+  ],
+  gridStress: { currentLoad: 78, maxCapacity: 100, level: 'high' as const, percentage: 78 },
+  costProjection: { dailyCost: 186, monthlyCost: 5580, trend: 'up' as const, trendPercent: 12, slabRisk: true },
+  recommendation: {
+    appliance: 'Washing Machine', currentTime: '7:00 PM (Peak)',
+    recommendedTime: '2:00 PM (Off-Peak)', savingsPercent: 15, savingsAmount: 12, co2Reduction: 0.8,
+  },
+  savings: {
+    beforeCost: 5580, afterCost: 4464, monthlySavings: 1116,
+    annualSavings: 13392, carbonReduction: 24, treesSaved: 3,
+  },
+  dashboardSummary: { totalDailyUsage: 42.3, monthlyCost: 5580, peakLoad: 4.8, monthlySavings: 1116 },
 };
 
-export const mockRecommendation: Recommendation = {
-  appliance: 'Washing Machine',
-  currentTime: '7:00 PM (Peak)',
-  recommendedTime: '2:00 PM (Off-Peak)',
-  savingsPercent: 15,
-  savingsAmount: 12,
-  co2Reduction: 0.8,
-};
+// ─── API Helper ─────────────────────────────────────────
 
-export const mockSavings: SavingsData = {
-  beforeCost: 5580,
-  afterCost: 4464,
-  monthlySavings: 1116,
-  annualSavings: 13392,
-  carbonReduction: 24,
-  treesSaved: 3,
-};
+async function fetchAPI<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_BASE}${url}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
+  return res.json();
+}
 
-export const mockGridStress: GridStress = {
-  currentLoad: 78,
-  maxCapacity: 100,
-  level: 'high',
-  percentage: 78,
-};
+// ─── API Functions ──────────────────────────────────────
 
-// Simulated API functions
 export const api = {
+  /** Get 24h usage analytics (hourly data, peaks, grid stress) */
+  getAnalytics: async (): Promise<UsageAnalytics> => {
+    try {
+      return await fetchAPI<UsageAnalytics>('/usage-analytics');
+    } catch {
+      return {
+        hourlyData: mockFallback.hourlyData,
+        peakHours: mockFallback.peakHours,
+        gridStress: mockFallback.gridStress,
+        totalDailyUsage: 42.3,
+        averageHourlyUsage: 1.76,
+      };
+    }
+  },
+
+  /** Get 24h forecast from RF model */
   predict: async (): Promise<HourlyData[]> => {
-    await new Promise(r => setTimeout(r, 500));
-    return mockHourlyData;
+    try {
+      const res = await fetchAPI<{ hourlyData: HourlyData[] }>('/forecast', { method: 'POST' });
+      return res.hourlyData;
+    } catch {
+      return mockFallback.hourlyData;
+    }
   },
 
+  /** Get cost projection */
   calculateCost: async (): Promise<CostProjection> => {
-    await new Promise(r => setTimeout(r, 300));
-    return mockCostProjection;
+    try {
+      return await fetchAPI<CostProjection>('/calculate-cost', { method: 'POST' });
+    } catch {
+      return mockFallback.costProjection;
+    }
   },
 
-  optimize: async (_appliance: { name: string; type: string; power: number; duration: number }): Promise<Recommendation> => {
-    await new Promise(r => setTimeout(r, 800));
-    return mockRecommendation;
+  /** Optimize appliance scheduling */
+  optimize: async (appliance: { name: string; type: string; power: number; duration: number; preferredTime?: string }): Promise<OptimizeResponse> => {
+    try {
+      return await fetchAPI<OptimizeResponse>('/optimize', {
+        method: 'POST',
+        body: JSON.stringify(appliance),
+      });
+    } catch {
+      return { recommendation: mockFallback.recommendation, savings: mockFallback.savings };
+    }
   },
 
+  /** AI chatbot */
   chat: async (message: string): Promise<string> => {
-    await new Promise(r => setTimeout(r, 600));
-    const responses: Record<string, string> = {
-      default: "Based on your energy data, I can see some opportunities for optimization. Your peak usage occurs between 6-8 PM. Consider shifting heavy appliance usage to off-peak hours (10 AM - 4 PM) to save up to **15% on your monthly bill**.",
-      bill: "Your projected monthly bill is **₹5,580**. This is 12% higher than last month due to increased peak-hour usage. By following my scheduling recommendations, you could bring it down to **₹4,464** — saving **₹1,116/month**.",
-      peak: "Today's peak consumption hours are **6 PM to 8 PM** with loads reaching **4.8 kWh**. The grid stress level is HIGH during these hours. I recommend shifting your washing machine and dishwasher to **2 PM** when rates are lowest.",
-      save: "Here's your savings potential:\n- **Monthly**: ₹1,116\n- **Annual**: ₹13,392\n- **Carbon**: 24 kg CO₂ reduced\n\nThe easiest win is shifting your washing machine cycle — it alone saves ₹12 per cycle!",
-      appliance: "For heavy appliances, the best times to run them are:\n- **Washing Machine**: 2:00 PM\n- **Dishwasher**: 1:00 PM\n- **AC**: Use at 24°C with timer\n- **Water Heater**: 5:00 AM\n\nThese times align with off-peak tariff rates and low grid stress.",
-    };
+    try {
+      const res = await fetchAPI<{ reply: string }>('/chat', {
+        method: 'POST',
+        body: JSON.stringify({ user_message: message }),
+      });
+      return res.reply;
+    } catch {
+      return "I'm having trouble connecting to the server. Please make sure the backend is running on port 8000.";
+    }
+  },
 
-    const lower = message.toLowerCase();
-    if (lower.includes('bill') || lower.includes('cost')) return responses.bill;
-    if (lower.includes('peak') || lower.includes('high')) return responses.peak;
-    if (lower.includes('save') || lower.includes('reduc')) return responses.save;
-    if (lower.includes('appliance') || lower.includes('when') || lower.includes('run')) return responses.appliance;
-    return responses.default;
+  /** Dashboard summary stats */
+  getDashboardSummary: async (): Promise<DashboardSummary> => {
+    try {
+      return await fetchAPI<DashboardSummary>('/dashboard-summary');
+    } catch {
+      return mockFallback.dashboardSummary;
+    }
+  },
+
+  /** Get savings summary */
+  getSavings: async (): Promise<SavingsData> => {
+    try {
+      return await fetchAPI<SavingsData>('/savings');
+    } catch {
+      return mockFallback.savings;
+    }
+  },
+
+  /** Upload CSV data */
+  uploadData: async (file: File): Promise<{ message: string; rows_processed: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/upload-data`, { method: 'POST', body: formData });
+    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    return res.json();
   },
 };

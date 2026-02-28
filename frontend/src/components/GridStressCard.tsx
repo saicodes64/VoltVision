@@ -1,8 +1,23 @@
-import { mockGridStress } from '@/services/api';
+import { useState, useEffect } from 'react';
+import { api, type GridStress } from '@/services/api';
 import { Gauge, Info } from 'lucide-react';
 
 const GridStressCard = () => {
-  const g = mockGridStress;
+  const [g, setG] = useState<GridStress | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getAnalytics().then(data => { setG(data.gridStress); setLoading(false); });
+  }, []);
+
+  if (loading || !g) {
+    return (
+      <div className="card-gradient rounded-xl border border-border p-6 animate-pulse">
+        <div className="h-48 rounded-lg bg-muted" />
+      </div>
+    );
+  }
+
   const colorMap = { low: 'text-savings', moderate: 'text-warning', high: 'text-peak' };
   const bgMap = { low: 'bg-savings', moderate: 'bg-warning', high: 'bg-peak' };
   const glowMap = { low: 'glow-green', moderate: '', high: 'glow-red' };

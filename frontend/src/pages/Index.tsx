@@ -1,3 +1,4 @@
+import { useState, useEffect, useCallback } from 'react';
 import { Zap, BarChart3, Home, Factory } from 'lucide-react';
 import UsageChart from '@/components/UsageChart';
 import PeakSummary from '@/components/PeakSummary';
@@ -7,8 +8,26 @@ import RecommendationCard from '@/components/RecommendationCard';
 import SavingsSummary from '@/components/SavingsSummary';
 import GridStressCard from '@/components/GridStressCard';
 import EnergyChatbot from '@/components/EnergyChatbot';
+import DataUpload from '@/components/DataUpload';
+import { api, type DashboardSummary } from '@/services/api';
 
 const Index = () => {
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const loadSummary = useCallback(() => {
+    api.getDashboardSummary().then(setSummary);
+  }, []);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary, refreshKey]);
+
+  const handleUploadSuccess = () => {
+    // Increment key to force all child components to remount and re-fetch
+    setRefreshKey(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -41,29 +60,55 @@ const Index = () => {
 
       {/* Dashboard Grid */}
       <main className="container mx-auto px-4 py-6">
+        {/* Data Upload Section */}
+        <div className="mb-6">
+          <DataUpload onUploadSuccess={handleUploadSuccess} />
+        </div>
+
         {/* Top Stats Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <StatCard label="Today's Usage" value="42.3 kWh" icon={<BarChart3 className="h-4 w-4" />} variant="blue" />
-          <StatCard label="Monthly Bill" value="₹5,580" icon={<Zap className="h-4 w-4" />} variant="blue" highlight />
-          <StatCard label="Peak Load" value="4.8 kWh" icon={<Zap className="h-4 w-4" />} variant="red" />
-          <StatCard label="Savings" value="₹1,116" icon={<Zap className="h-4 w-4" />} variant="green" />
+          <StatCard
+            label="Today's Usage"
+            value={summary ? `${summary.totalDailyUsage.toFixed(1)} kWh` : '...'}
+            icon={<BarChart3 className="h-4 w-4" />}
+            variant="blue"
+          />
+          <StatCard
+            label="Monthly Bill"
+            value={summary ? `₹${Math.round(summary.monthlyCost).toLocaleString()}` : '...'}
+            icon={<Zap className="h-4 w-4" />}
+            variant="blue"
+            highlight
+          />
+          <StatCard
+            label="Peak Load"
+            value={summary ? `${summary.peakLoad.toFixed(1)} kWh` : '...'}
+            icon={<Zap className="h-4 w-4" />}
+            variant="red"
+          />
+          <StatCard
+            label="Savings"
+            value={summary ? `₹${Math.round(summary.monthlySavings).toLocaleString()}` : '...'}
+            icon={<Zap className="h-4 w-4" />}
+            variant="green"
+          />
         </div>
 
         {/* Two-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column – Analytics */}
           <div className="space-y-6">
-            <UsageChart />
-            <PeakSummary />
-            <GridStressCard />
+            <UsageChart key={`chart-${refreshKey}`} />
+            <PeakSummary key={`peak-${refreshKey}`} />
+            <GridStressCard key={`grid-${refreshKey}`} />
           </div>
 
           {/* Right Column – Optimization */}
           <div className="space-y-6">
-            <CostCard />
-            <RecommendationCard />
-            <ApplianceForm />
-            <SavingsSummary />
+            <CostCard key={`cost-${refreshKey}`} />
+            <RecommendationCard key={`rec-${refreshKey}`} />
+            <ApplianceForm key={`form-${refreshKey}`} />
+            <SavingsSummary key={`sav-${refreshKey}`} />
           </div>
         </div>
       </main>

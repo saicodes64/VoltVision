@@ -1,8 +1,24 @@
-import { mockCostProjection } from '@/services/api';
-import { IndianRupee, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { api, type CostProjection } from '@/services/api';
+import { IndianRupee, TrendingUp, TrendingDown, AlertTriangle, Loader2 } from 'lucide-react';
 
 const CostCard = () => {
-  const { dailyCost, monthlyCost, trend, trendPercent, slabRisk } = mockCostProjection;
+  const [data, setData] = useState<CostProjection | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.calculateCost().then(d => { setData(d); setLoading(false); });
+  }, []);
+
+  if (loading || !data) {
+    return (
+      <div className="card-gradient rounded-xl border border-primary/30 p-6 glow-blue animate-pulse">
+        <div className="h-40 rounded-lg bg-muted" />
+      </div>
+    );
+  }
+
+  const { dailyCost, monthlyCost, trend, trendPercent, slabRisk } = data;
 
   return (
     <div className="card-gradient rounded-xl border border-primary/30 p-6 glow-blue relative overflow-hidden">

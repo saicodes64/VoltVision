@@ -28,7 +28,14 @@ const UsageChart = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.predict().then(d => { setData(d); setLoading(false); });
+    // Use usage-analytics (which has both actual + predicted from uploaded/simulated data)
+    api.getAnalytics().then(result => {
+      setData(result.hourlyData);
+      setLoading(false);
+    }).catch(() => {
+      // Fallback to forecast endpoint
+      api.predict().then(d => { setData(d); setLoading(false); });
+    });
   }, []);
 
   if (loading) {
@@ -39,11 +46,23 @@ const UsageChart = () => {
     );
   }
 
+  if (data.length === 0) {
+    return (
+      <div className="card-gradient rounded-xl border border-border p-6">
+        <p className="text-center text-muted-foreground text-sm py-10">No data available. Upload a CSV to see your analytics.</p>
+      </div>
+    );
+  }
+
   const chartData = data.map(d => ({
     ...d,
     isPeak: d.gridLoad === 'high' ? d.actual : null,
     isGreen: d.gridLoad === 'low' ? d.actual : null,
   }));
+
+  // Dynamic peak threshold based on data
+  const maxActual = Math.max(...data.map(d => d.actual));
+  const peakThreshold = parseFloat((maxActual * 0.75).toFixed(1));
 
   return (
     <div className="card-gradient rounded-xl border border-border p-6 glow-blue">
@@ -76,7 +95,13 @@ const UsageChart = () => {
           <XAxis dataKey="label" stroke="hsl(215, 20%, 55%)" fontSize={11} tickLine={false} interval={3} />
           <YAxis stroke="hsl(215, 20%, 55%)" fontSize={11} tickLine={false} axisLine={false} unit=" kWh" />
           <Tooltip content={<CustomTooltip />} />
-          <ReferenceLine y={4} stroke="hsl(0, 72%, 51%)" strokeDasharray="5 5" strokeOpacity={0.5} label={{ value: 'Peak Threshold', position: 'right', fill: 'hsl(0, 72%, 51%)', fontSize: 10 }} />
+          <ReferenceLine
+            y={peakThreshold}
+            stroke="hsl(0, 72%, 51%)"
+            strokeDasharray="5 5"
+            strokeOpacity={0.5}
+            label={{ value: 'Peak Threshold', position: 'right', fill: 'hsl(0, 72%, 51%)', fontSize: 10 }}
+          />
           <Area type="monotone" dataKey="actual" stroke="hsl(217, 91%, 60%)" strokeWidth={2.5} fill="url(#blueGrad)" dot={false} activeDot={{ r: 5, fill: 'hsl(217, 91%, 60%)' }} />
           <Line type="monotone" dataKey="predicted" stroke="hsl(215, 20%, 55%)" strokeWidth={1.5} strokeDasharray="6 4" dot={false} />
         </AreaChart>

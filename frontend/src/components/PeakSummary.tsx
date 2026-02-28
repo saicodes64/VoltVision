@@ -1,4 +1,5 @@
-import { mockPeakHours, mockGridStress } from '@/services/api';
+import { useState, useEffect } from 'react';
+import { api, type PeakHour } from '@/services/api';
 import { Zap, AlertTriangle } from 'lucide-react';
 
 const stressConfig = {
@@ -8,7 +9,25 @@ const stressConfig = {
 };
 
 const PeakSummary = () => {
-  const maxLoad = Math.max(...mockPeakHours.map(p => p.load));
+  const [peakHours, setPeakHours] = useState<PeakHour[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.getAnalytics().then(data => {
+      setPeakHours(data.peakHours);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="card-gradient rounded-xl border border-border p-6 animate-pulse">
+        <div className="h-48 rounded-lg bg-muted" />
+      </div>
+    );
+  }
+
+  const maxLoad = peakHours.length > 0 ? Math.max(...peakHours.map(p => p.load)) : 0;
   const threshold = 4.0;
   const exceeded = maxLoad > threshold;
 
@@ -32,7 +51,7 @@ const PeakSummary = () => {
       )}
 
       <div className="space-y-3">
-        {mockPeakHours.map((peak, i) => {
+        {peakHours.map((peak, i) => {
           const cfg = stressConfig[peak.gridStress];
           return (
             <div key={i} className="flex items-center justify-between rounded-lg bg-secondary/50 px-4 py-3">

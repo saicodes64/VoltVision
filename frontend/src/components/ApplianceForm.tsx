@@ -10,8 +10,18 @@ const ApplianceForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const res = await api.optimize({ name: form.name, type: form.type, power: parseFloat(form.power), duration: parseFloat(form.duration) });
-    setResult(res);
+    try {
+      const res = await api.optimize({
+        name: form.name,
+        type: form.type,
+        power: parseFloat(form.power),
+        duration: parseFloat(form.duration),
+        preferredTime: form.preferredTime || undefined,
+      });
+      setResult(res.recommendation);
+    } catch (err) {
+      console.error('Optimization failed:', err);
+    }
     setLoading(false);
   };
 

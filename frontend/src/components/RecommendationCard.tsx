@@ -1,8 +1,26 @@
-import { mockRecommendation } from '@/services/api';
-import { Lightbulb, Clock, Leaf, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { api, type Recommendation } from '@/services/api';
+import { Lightbulb, Clock, Leaf } from 'lucide-react';
 
 const RecommendationCard = () => {
-  const r = mockRecommendation;
+  const [r, setR] = useState<Recommendation | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch a default recommendation for Washing Machine
+    api.optimize({ name: 'Washing Machine', type: 'home', power: 1.2, duration: 1.5 }).then(data => {
+      setR(data.recommendation);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading || !r) {
+    return (
+      <div className="card-gradient rounded-xl border border-savings/30 p-6 glow-green animate-pulse">
+        <div className="h-52 rounded-lg bg-muted" />
+      </div>
+    );
+  }
 
   return (
     <div className="card-gradient rounded-xl border border-savings/30 p-6 glow-green relative overflow-hidden">
