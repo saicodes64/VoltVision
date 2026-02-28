@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 96%;
+
+    --card: 222 44% 9%;
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 44% 9%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 40% 14%;
+    --secondary-foreground: 210 40% 90%;
+
+    --muted: 222 30% 16%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+
+    --peak: 0 72% 51%;
+    --peak-foreground: 0 0% 100%;
+
+    --savings: 142 71% 45%;
+    --savings-foreground: 0 0% 100%;
+
+    --energy-blue: 217 91% 60%;
+    --energy-glow: 217 91% 70%;
+    --energy-deep: 222 47% 4%;
+
+    --border: 222 30% 18%;
+    --input: 222 30% 16%;
+    --ring: 217 91% 60%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 222 44% 9%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 217 91% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 40% 14%;
+    --sidebar-accent-foreground: 210 40% 96%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 217 91% 60%;
+
+    --chart-peak: 0 72% 51%;
+    --chart-green: 142 71% 45%;
+    --chart-blue: 217 91% 60%;
+    --chart-predicted: 217 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .glow-blue {
+    box-shadow: 0 0 20px hsl(217 91% 60% / 0.15), 0 0 60px hsl(217 91% 60% / 0.05);
+  }
+
+  .glow-green {
+    box-shadow: 0 0 20px hsl(142 71% 45% / 0.15), 0 0 60px hsl(142 71% 45% / 0.05);
+  }
+
+  .glow-red {
+    box-shadow: 0 0 20px hsl(0 72% 51% / 0.15);
+  }
+
+  .card-gradient {
+    background: linear-gradient(135deg, hsl(222 44% 9%) 0%, hsl(222 44% 12%) 100%);
+  }
+
+  .energy-gradient {
+    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(192 91% 50%) 100%);
+  }
+
+  .savings-gradient {
+    background: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(160 71% 50%) 100%);
+  }
+
+  .peak-gradient {
+    background: linear-gradient(135deg, hsl(0 72% 51%) 0%, hsl(25 92% 50%) 100%);
+  }
+
+  .text-gradient-blue {
+    background: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(192 91% 60%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-gradient-green {
+    background: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(160 71% 50%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
