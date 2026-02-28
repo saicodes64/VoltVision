@@ -7,7 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import CORS_ORIGINS
 from app.api.routes import router
-from app.state.data_store import data_store, generate_simulated_data
 
 
 app = FastAPI(
@@ -36,12 +35,7 @@ async def startup_event():
     print("⚡ VoltVision Backend Starting...")
     print("=" * 60)
 
-    # Generate simulated data if no data exists
-    if not data_store.has_data():
-        print("[Startup] Generating simulated energy data (30 days)...")
-        simulated = generate_simulated_data(days=30)
-        data_store.set_data(simulated)
-        print(f"[Startup] ✅ Loaded {len(simulated)} hourly records")
+    # Data is now fetched per-user from MongoDB.
 
     # Model loading happens in forecasting_service import
     from app.services.forecasting_service import forecasting_service
@@ -78,8 +72,6 @@ async def health():
 
     return {
         "status": "healthy",
-        "data_loaded": data_store.has_data(),
-        "data_points": len(data_store.get_all_data()),
         "model_loaded": forecasting_service.model_loaded,
         "gemini_calls_remaining": api_tracker.remaining_calls(),
     }

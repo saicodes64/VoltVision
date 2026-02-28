@@ -1,7 +1,33 @@
 // VoltVision API Service — connects to FastAPI backend
-// Falls back to mock data if backend is unreachable
+// Authenticated requests automatically attach the JWT Bearer token from localStorage.
 
 const API_BASE = '/api';
+const STORAGE_KEY = 'vv_auth';
+
+// ── Auth helpers ────────────────────────────────────────
+
+function getToken(): string | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw)?.token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// ── Types ───────────────────────────────────────────────
+
+export interface AuthUser {
+  user_id: string;
+  email: string;
+  token: string;
+}
 
 export interface HourlyData {
   hour: number;
@@ -71,12 +97,12 @@ export interface OptimizeResponse {
   savings: SavingsData;
 }
 
-// ─── Mock Data (fallback) ───────────────────────────────
+// ── Mock Data (fallback when backend is offline) ────────
 
 const generateMockHourlyData = (): HourlyData[] => {
   const basePattern = [
     0.8, 0.6, 0.5, 0.4, 0.5, 0.7, 1.2, 2.1, 2.8, 3.2, 3.0, 2.6,
-    2.4, 2.2, 2.5, 2.8, 3.5, 4.2, 4.8, 4.5, 3.8, 2.9, 1.8, 1.1
+    2.4, 2.2, 2.5, 2.8, 3.5, 4.2, 4.8, 4.5, 3.8, 2.9, 1.8, 1.1,
   ];
   return basePattern.map((val, i) => {
     const predicted = val + (Math.random() - 0.5) * 0.4;
@@ -102,8 +128,12 @@ const mockFallback = {
   gridStress: { currentLoad: 78, maxCapacity: 100, level: 'high' as const, percentage: 78 },
   costProjection: { dailyCost: 186, monthlyCost: 5580, trend: 'up' as const, trendPercent: 12, slabRisk: true },
   recommendation: {
-    appliance: 'Washing Machine', currentTime: '7:00 PM (Peak)',
-    recommendedTime: '2:00 PM (Off-Peak)', savingsPercent: 15, savingsAmount: 12, co2Reduction: 0.8,
+    appliance: 'Washing Machine',
+    currentTime: '7:00 PM (Peak)',
+    recommendedTime: '2:00 PM (Off-Peak)',
+    savingsPercent: 15,
+    savingsAmount: 12,
+    co2Reduction: 0.8,
   },
   savings: {
     beforeCost: 5580, afterCost: 4464, monthlySavings: 1116,
@@ -112,23 +142,47 @@ const mockFallback = {
   dashboardSummary: { totalDailyUsage: 42.3, monthlyCost: 5580, peakLoad: 4.8, monthlySavings: 1116 },
 };
 
-// ─── API Helper ─────────────────────────────────────────
+// ── Fetch helper ────────────────────────────────────────
 
 async function fetchAPI<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     ...options,
   });
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    let detail = `API error: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body.detail) detail = body.detail;
+    } catch { /* ignore */ }
+    throw new Error(detail);
   }
   return res.json();
 }
 
-// ─── API Functions ──────────────────────────────────────
+// ── API Functions ──────────────────────────────────────
 
 export const api = {
-  /** Get 24h usage analytics (hourly data, peaks, grid stress) */
+  /** Auth — login / signup */
+  auth: {
+    login: async (email: string, password: string): Promise<AuthUser> => {
+      const res = await fetchAPI<AuthUser & { message: string }>('/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      return { user_id: res.user_id, email: res.email, token: res.token };
+    },
+
+    signup: async (email: string, password: string): Promise<AuthUser> => {
+      const res = await fetchAPI<AuthUser & { message: string }>('/signup', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      return { user_id: res.user_id, email: res.email, token: res.token };
+    },
+  },
+
+  /** Get 24h usage analytics */
   getAnalytics: async (): Promise<UsageAnalytics> => {
     try {
       return await fetchAPI<UsageAnalytics>('/usage-analytics');
@@ -146,7 +200,7 @@ export const api = {
   /** Get 24h forecast from RF model */
   predict: async (): Promise<HourlyData[]> => {
     try {
-      const res = await fetchAPI<{ hourlyData: HourlyData[] }>('/forecast', { method: 'POST' });
+      const res = await fetchAPI<{ hourlyData: HourlyData[] }>('/forecast');
       return res.hourlyData;
     } catch {
       return mockFallback.hourlyData;
@@ -156,14 +210,16 @@ export const api = {
   /** Get cost projection */
   calculateCost: async (): Promise<CostProjection> => {
     try {
-      return await fetchAPI<CostProjection>('/calculate-cost', { method: 'POST' });
+      return await fetchAPI<CostProjection>('/calculate-cost');
     } catch {
       return mockFallback.costProjection;
     }
   },
 
   /** Optimize appliance scheduling */
-  optimize: async (appliance: { name: string; type: string; power: number; duration: number; preferredTime?: string }): Promise<OptimizeResponse> => {
+  optimize: async (appliance: {
+    name: string; type: string; power: number; duration: number; preferredTime?: string;
+  }): Promise<OptimizeResponse> => {
     try {
       return await fetchAPI<OptimizeResponse>('/optimize', {
         method: 'POST',
@@ -205,12 +261,47 @@ export const api = {
     }
   },
 
+  /** Anomaly detection on historical data */
+  getAnomalies: async (): Promise<{ records: any[]; summary: any }> => {
+    try {
+      return await fetchAPI<{ records: any[]; summary: any }>('/anomalies');
+    } catch {
+      return { records: [], summary: { total: 0, anomaly_count: 0, avg_kwh: 0, max_kwh: 0, anomaly_percent: 0, anomaly_hours: [] } };
+    }
+  },
+
+  /** Anomaly detection on forecasted next 24h */
+  getAnomalyForecast: async (): Promise<{ records: any[]; summary: any }> => {
+    try {
+      return await fetchAPI<{ records: any[]; summary: any }>('/anomalies/forecast');
+    } catch {
+      return { records: [], summary: { total: 0, anomaly_count: 0, avg_kwh: 0, max_kwh: 0, anomaly_percent: 0, anomaly_hours: [] } };
+    }
+  },
+
+  /** Full pipeline: forecast + anomaly → smart recommendations */
+  getRecommendations: async (): Promise<any> => {
+    try {
+      return await fetchAPI<any>('/recommendations');
+    } catch {
+      return null;
+    }
+  },
+
   /** Upload CSV data */
   uploadData: async (file: File): Promise<{ message: string; rows_processed: number }> => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_BASE}/upload-data`, { method: 'POST', body: formData });
-    if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+    const res = await fetch(`${API_BASE}/upload-data`, {
+      method: 'POST',
+      headers: authHeaders(), // no Content-Type — browser sets multipart boundary
+      body: formData,
+    });
+    if (!res.ok) {
+      let detail = `Upload failed: ${res.status}`;
+      try { const b = await res.json(); if (b.detail) detail = b.detail; } catch { /* ignore */ }
+      throw new Error(detail);
+    }
     return res.json();
   },
 };

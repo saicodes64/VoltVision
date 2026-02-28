@@ -4,17 +4,13 @@ Tariff service — slab-based Indian electricity cost calculation.
 
 from typing import Dict, List
 from app.core.config import TARIFF_SLABS, FIXED_CHARGE_PER_MONTH, DEMAND_CHARGE_PER_KW
-from app.state.data_store import data_store
 
 
-def calculate_cost() -> Dict:
+def calculate_cost(all_data: List[Dict], latest_24h: List[Dict]) -> Dict:
     """
     Calculate cost projection based on current usage data.
     Uses Indian slab-based tariff system.
     """
-    all_data = data_store.get_all_data()
-    latest_24h = data_store.get_latest_24h()
-
     if not latest_24h:
         return _default_cost()
 

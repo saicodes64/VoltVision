@@ -36,7 +36,7 @@ class AIService:
         except Exception as e:
             print(f"[AIService] ❌ Failed to init Gemini: {e}")
 
-    async def chat(self, user_message: str) -> Dict:
+    async def chat(self, user_message: str, latest_24h: list, all_data: list) -> Dict:
         """
         Process a chat message. Steps:
         1. Check cache for identical query
@@ -65,7 +65,7 @@ class AIService:
             }
 
         # 3. Generate summary
-        summary = generate_insight_summary()
+        summary = generate_insight_summary(latest_24h, all_data)
         summary_text = format_summary_for_prompt(summary)
 
         # 4. Construct prompt

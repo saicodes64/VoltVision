@@ -2,6 +2,18 @@ from pydantic import BaseModel
 from typing import List, Optional, Literal
 
 
+# --- Auth ---
+class UserAuth(BaseModel):
+    email: str
+    password: str
+
+class AuthResponse(BaseModel):
+    message: str
+    user_id: str
+    email: str
+    token: str
+
+
 # --- Upload ---
 class UploadResponse(BaseModel):
     message: str

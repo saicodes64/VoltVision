@@ -2,14 +2,13 @@
 Optimization service — appliance scheduling, savings calculations.
 """
 
-from typing import Dict
-from app.state.data_store import data_store
+from typing import Dict, List
 from app.utils.peak_detection import find_optimal_hour, identify_peak_hours, is_peak_hour
 from app.core.config import CO2_PER_KWH, TARIFF_SLABS
 from app.services.tariff_service import calculate_cost
 
 
-def optimize_appliance(name: str, appliance_type: str, power_kwh: float, duration_hrs: float, preferred_time: str = None) -> Dict:
+def optimize_appliance(latest_24h: List[Dict], name: str, appliance_type: str, power_kwh: float, duration_hrs: float, preferred_time: str = None) -> Dict:
     """
     Generate optimization recommendation for an appliance.
     
@@ -22,7 +21,6 @@ def optimize_appliance(name: str, appliance_type: str, power_kwh: float, duratio
     
     Returns: recommendation + savings data
     """
-    latest_24h = data_store.get_latest_24h()
 
     # Find peak and optimal hours
     peaks = identify_peak_hours(latest_24h, top_n=3)
@@ -84,14 +82,12 @@ def optimize_appliance(name: str, appliance_type: str, power_kwh: float, duratio
     }
 
 
-def get_default_savings() -> Dict:
+def get_default_savings(latest_24h: List[Dict], all_data: List[Dict]) -> Dict:
     """Get savings data based on general optimization of all peak usage."""
-    latest_24h = data_store.get_latest_24h()
-
     if not latest_24h:
         return _default_savings()
 
-    cost_data = calculate_cost()
+    cost_data = calculate_cost(all_data, latest_24h)
     monthly_cost = cost_data.get("monthlyCost", 5000)
 
     # Estimate 15-20% savings from optimization

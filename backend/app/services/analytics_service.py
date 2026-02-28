@@ -3,24 +3,21 @@ Analytics service — computes usage analytics from stored data.
 """
 
 from typing import List, Dict
-from app.state.data_store import data_store
 from app.services.forecasting_service import forecasting_service
 from app.utils.peak_detection import identify_peak_hours, calculate_grid_stress, classify_grid_stress
 from app.core.config import TARIFF_SLABS
 
 
-def get_usage_analytics() -> Dict:
+def get_usage_analytics(latest_24h: List[Dict], all_data: List[Dict]) -> Dict:
     """
     Compute full usage analytics for the dashboard.
     Returns hourly data (actual + predicted), peak hours, grid stress, totals.
     """
-    latest_24h = data_store.get_latest_24h()
 
     if not latest_24h:
         return _empty_analytics()
 
     # Get predictions
-    all_data = data_store.get_all_data()
     predictions = forecasting_service.predict_next_24h(all_data)
 
     # Build hourly data - match frontend's expected format
