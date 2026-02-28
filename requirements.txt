@@ -1,0 +1,236 @@
+Good. You need clarity per person. No overlap. No confusion.
+
+Below is the role-wise requirement breakdown.
+If each person delivers their part, the system works.
+
+⸻
+
+🔹 1️⃣ ML Engineer – Model Development Lead
+
+Core Objective:
+
+Deliver trained models + feature definition.
+
+⸻
+
+Must Deliver:
+
+1. Forecasting Model
+	•	Random Forest Regressor
+	•	Predict hourly or daily energy usage
+	•	Chronological train-test split
+	•	Evaluation metrics (MAE, RMSE)
+
+2. Anomaly Detection Model
+	•	Isolation Forest
+	•	Proper contamination parameter
+	•	Output anomaly labels
+
+3. Model Artifacts
+	•	forecast_model.pkl
+	•	anomaly_model.pkl
+	•	If scaling used → save scaler
+
+4. Feature Specification Document
+Must clearly provide:
+	•	Feature names
+	•	Feature order
+	•	Any preprocessing applied
+	•	Expected input shape
+
+Without this, backend breaks.
+
+⸻
+
+Should NOT Do:
+	•	UI
+	•	API logic
+	•	Tariff logic
+
+⸻
+
+🔹 2️⃣ Backend Engineer – System Integration Lead (You)
+
+Core Objective:
+
+Convert ML logic into working API.
+
+⸻
+
+Must Deliver:
+
+1. Project Structure
+Clean modular architecture:
+	•	main.py
+	•	services/
+	•	models/
+	•	utils/
+
+2. API Endpoints
+	•	POST /upload-data
+	•	POST /predict
+	•	GET /anomalies
+	•	POST /calculate-cost
+	•	GET /optimize
+
+3. Model Integration
+	•	Load .pkl files at startup
+	•	Convert JSON to correct feature format
+	•	Return clean JSON
+
+4. Tariff Engine
+	•	Slab-based calculation
+	•	Flat rate + demand charge option
+	•	Return cost breakdown
+
+5. Optimization Logic
+	•	Identify peak hours
+	•	Suggest shiftable loads
+	•	Compute savings difference
+
+⸻
+
+Must Ensure:
+	•	CORS enabled
+	•	No retraining inside API
+	•	No raw pandas in response
+	•	Proper error handling
+
+⸻
+
+🔹 3️⃣ Data Engineer – Data & Simulation Lead
+
+Core Objective:
+
+Provide clean and realistic dataset.
+
+⸻
+
+Must Deliver:
+
+1. Clean Dataset
+	•	Remove nulls
+	•	Proper datetime formatting
+	•	Sorted chronologically
+
+2. Hostel Simulation
+	•	Add room ID (optional)
+	•	Add occupancy simulation
+	•	Add shiftable load column
+
+3. Feature Engineering Support
+	•	Rolling mean
+	•	Previous usage
+	•	Peak indicator
+
+4. Anomaly Simulation
+	•	Inject realistic abnormal spikes
+	•	Simulate waste scenarios
+
+Without realistic anomalies, anomaly model is useless.
+
+⸻
+
+🔹 4️⃣ Frontend Developer – Dashboard & Visualization Lead
+
+Core Objective:
+
+Make system understandable and convincing.
+
+⸻
+
+Must Deliver:
+
+1. Data Upload UI
+	•	CSV upload component
+	•	Tariff configuration form
+
+2. Dashboard Panels
+	•	Predicted usage graph
+	•	Projected monthly bill
+	•	Slab risk indicator
+	•	Anomaly alert list
+	•	Load shifting suggestion card
+	•	Savings comparison card
+
+3. API Integration
+	•	Connect to backend endpoints
+	•	Display JSON results properly
+	•	Handle loading states
+
+⸻
+
+Must Ensure:
+	•	Clean layout
+	•	No hardcoded data
+	•	Show cost prominently
+
+⸻
+
+🔹 5️⃣ Documentation & Product Lead
+
+Core Objective:
+
+Make project understandable, credible, and presentable.
+
+⸻
+
+Must Deliver:
+
+1. Architecture Diagram
+User → Backend → ML → Tariff Engine → Optimization → Dashboard
+
+2. Problem Statement
+Cost-first narrative.
+
+3. Implementation Document
+	•	Models used
+	•	Feature list
+	•	Tariff logic explanation
+	•	Optimization logic explanation
+
+4. Impact Estimation
+	•	Estimated savings %
+	•	Example hostel scenario
+
+5. Q&A Preparation
+Prepare answers for:
+	•	Why Random Forest?
+	•	Why Isolation Forest?
+	•	How tariff impacts logic?
+	•	How scalable?
+
+⸻
+
+🔥 Final Coordination Rules
+
+Everyone must agree on:
+	•	Feature list
+	•	Prediction frequency (hourly or daily)
+	•	Tariff type used in demo
+	•	Dataset structure
+
+Misalignment here = integration failure.
+
+⸻
+
+🎯 Minimum Output Checklist (By End of Day)
+
+✔ Trained models saved
+✔ Backend API running
+✔ Prediction working
+✔ Anomaly detection working
+✔ Cost calculation working
+✔ Load shifting suggestion working
+✔ Dashboard showing savings
+
+If even one of these fails, demo weakens.
+
+⸻
+
+Now I’ll ask you something important:
+
+Is your team aligned on predicting hourly or daily usage?
+
+That decision affects every role.
+```
