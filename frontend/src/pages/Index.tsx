@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Zap, BarChart3, Home, Factory, LogOut, LogIn } from 'lucide-react';
+import { Zap, BarChart3, Home, Factory, LogOut, LogIn, Info, Mail } from 'lucide-react';
 import UsageChart from '@/components/UsageChart';
 import PeakSummary from '@/components/PeakSummary';
 import CostCard from '@/components/CostCard';
@@ -64,6 +64,15 @@ const Index = () => {
             <div className="flex items-center gap-1.5 rounded-full bg-savings/10 border border-savings/20 px-3 py-1.5">
               <span className="h-2 w-2 rounded-full bg-savings animate-pulse-glow" />
               <span className="text-xs font-medium text-savings">Live</span>
+            </div>
+            {/* Nav links */}
+            <div className="hidden sm:flex items-center gap-1">
+              <Link to="/about" className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                <Info className="h-3.5 w-3.5" /> About
+              </Link>
+              <Link to="/contact" className="flex items-center gap-1 rounded-full px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors">
+                <Mail className="h-3.5 w-3.5" /> Contact
+              </Link>
             </div>
             {isAuthenticated ? (
               <div className="flex items-center gap-2">

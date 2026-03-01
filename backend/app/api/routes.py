@@ -6,7 +6,7 @@ Authentication uses JWT Bearer tokens via Depends(get_current_user).
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from app.schemas.schemas import (
     UploadResponse, AuthResponse, UserAuth, ChatRequest, ChatResponse,
-    DashboardSummary, OptimizeRequest, ApplianceOptimizeRequest,
+    DashboardSummary, OptimizeRequest, ApplianceOptimizeRequest, ContactRequest,
 )
 from app.core.auth import get_current_user
 from app.db.user_crud import create_user, authenticate_user
@@ -263,8 +263,25 @@ async def optimize_appliance_endpoint(
         "appliance_name": request.appliance_name,
         "energy_per_run_kwh": round(energy_per_run, 2),
     }
+
+
 # ──────────────────────────────────────────
-# 7. POST /api/chat
+# POST /api/contact — No auth required
+# ──────────────────────────────────────────
+
+@router.post("/contact")
+async def contact(request: ContactRequest):
+    """Send a contact form message to the admin email. No auth required."""
+    from app.services.email_service import send_contact_email
+    result = send_contact_email(
+        name=request.name,
+        sender_email=request.email,
+        subject=request.subject,
+        message=request.message,
+    )
+    if "error" in result:
+        raise HTTPException(status_code=503, detail=result["error"])
+    return {"message": "Your message has been sent. Thank you for reaching out!"}
 # ──────────────────────────────────────────
 
 @router.post("/chat", response_model=ChatResponse)

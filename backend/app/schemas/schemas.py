@@ -138,3 +138,11 @@ class DashboardSummary(BaseModel):
     monthlyCost: float
     peakLoad: float
     monthlySavings: float
+
+
+# --- Contact Form ---
+class ContactRequest(BaseModel):
+    name: str
+    email: str
+    subject: str
+    message: str
