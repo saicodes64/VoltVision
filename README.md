@@ -1,315 +1,170 @@
 
-# ⚡ VoltVision  
-### AI-Based Energy Consumption Optimizer  
-**SIC - Code4Society Competition**  
-**Team Axios**
-1. Sai Surve
-2. Shivam Bhatane
-3. Pritesh Gholap
-4. Tanishka Pol
-5. Adhokshaj Kulkarni
-
-
-## 📌 Problem Statement (PS: 02)
-
-### AI-Based Energy Consumption Optimizer
-
-#### 🔍 Description
-Homes and industries waste electricity by running appliances inefficiently. VoltVision analyzes energy usage patterns to suggest the *greenest* and *most cost-efficient* times to operate high-load devices.
-
-#### 🎯 Objective
-- Reduce electricity bills  
-- Minimize peak-load stress on the power grid  
-- Promote sustainable energy habits  
-
-#### 📊 Expected Outcomes
-- Usage Analytics Dashboard showing peak consumption times  
-- Smart Alerts (e.g., *"Run the washing machine at 2 PM to save 15%"*)
-
----
-
-# 🏗 System Architecture
-
-Frontend (React + TypeScript)
-↓
-FastAPI Backend (API Layer)
-↓
-Machine Learning Services
-↓
-MongoDB Database
-↓
-Gemini AI Chatbot
-
----
-
-## 🧠 Architecture Layers
-
-### 1️⃣ Frontend (Presentation Layer)
-- React + TypeScript Dashboard
-- Usage & Forecast Charts
-- Anomaly Indicators
-- Smart Recommendation Panel
-- Energy AI Chatbot
-
-### 2️⃣ Backend (Application Layer)
-- FastAPI REST API
-- ML Model Execution
-- Recommendation Engine
-- Authentication & User Management
-- MongoDB Data Persistence
-
-### 3️⃣ Machine Learning Layer
-- Random Forest Regressor (Forecasting)
-- Isolation Forest (Anomaly Detection)
-- Rule-Based Optimization Engine
-
-### 4️⃣ Database Layer
-- MongoDB (User + Energy Data Storage)
-
----
-
-# 🔄 Complete Workflow
-
----
-
-## Step 1: Data Upload & Cleaning (Foundation)
-
-**Input:** CSV file (`timestamp`, `usage_kwh`)
-
-### Process:
-- Parse CSV using pandas
-- Fill missing values (median replacement)
-- Remove negative anomalies
-- Sort chronologically
-- Store cleaned data in MongoDB linked to the user
-
----
-
-## Step 2: 24-Hour Forecasting (Predictive AI)
-
-### Model Used:
-**Random Forest Regressor**
-
-### Feature Engineering (9 Features):
-- hour
-- day_of_week
-- month
-- is_weekend
-- rolling_mean_3h
-- prev_usage
-- peak_indicator
-- hour_sin
-- hour_cos
-
-### Output:
-- 24-hour predicted usage curve
-- Hour-by-hour energy consumption forecast
-
----
-
-## Step 3: Anomaly Detection (Security AI)
-
-### Model Used:
-**Isolation Forest**
-
-### Purpose:
-Detect abnormal energy spikes and drops.
-
-### Process:
-- Map kWh into expected model features:
-  - Peak Power
-  - Average Power
-  - Expected Voltage
-  - Max Current
-- Detect outliers
-- Assign severity score:
-  - Medium
-  - High
-
----
-
-## Step 4: Recommendation Engine (Decision Brain)
-
-Combines:
-- Forecast output
-- Anomaly detection
-- Rule-based logic
-
-### Optimization Rules
-
-1. **High Load Warning**
-   - If predicted peak > 3.5 kWh → Critical alert
-
-2. **Sudden Spike Detection**
-   - If usage increases > 1.8x → Warning alert
-
-3. **Best Time Window**
-   - Identify 3 lowest predicted hours
-   - Suggest appliance shifting
-
-4. **Trend Analysis**
-   - Rising slope → Check standby loads
-   - Flat slope → Positive confirmation
-
-5. **Anomaly Alert**
-   - Flag abnormal device behavior
-
-6. **Recurring Fault Detection**
-   - Same hour anomaly across days → Fault pattern
-
-7. **Clean Health Score**
-   - No peaks or anomalies → Positive status
-
-### Final Output:
-- Risk Score (0–100)
-- Risk Level (Low / Medium / High)
-- Actionable Recommendations
-
----
-
-## Step 5: Frontend Visualization
-
-### Dashboard Components
-
-- **Usage Chart**
-  - Historical + Forecast curve
-- **Anomaly Chart**
-  - Red / Orange markers
-- **Smart Recommendations Panel**
-  - Color-coded alerts
-- **Savings Summary**
-  - Cost reduction percentage
-- **Energy Chatbot**
-  - Natural language AI advice
-
----
-
-# 🤖 Models Trained
-
-### 1️⃣ Random Forest Regressor
-- 24-hour forecasting
-- Captures temporal patterns
-- Stable ensemble predictions
-
-### 2️⃣ Isolation Forest
-- Unsupervised anomaly detection
-- Identifies abnormal consumption behavior
-- Prevents hidden device faults
-
----
-
-# 🛠 Technologies Used
-
-## 🔬 Machine Learning & AI
-- **scikit-learn**
-  - Random Forest Regressor
-  - Isolation Forest
-- **pandas & numpy**
-  - Data processing & feature engineering
-- **joblib**
-  - Model serialization (.pkl)
-- **Google Gemini AI**
-  - Natural language chatbot advice
-
----
-
-## ⚙ Backend
-- **FastAPI**
-- **Uvicorn**
-- **python-jose (JWT)**
-- **bcrypt**
-- **pymongo**
-
----
-
-## 🗄 Database
-- **MongoDB**
-  - User storage
-  - Energy data storage
-  - Flexible time-series documents
-
----
-
-## 🎨 Frontend
-- **React + TypeScript**
-- **Vite**
-- **Recharts**
-- **Tailwind CSS**
-- **Lucide React**
-- **React Router**
-
----
-
-# 📁 Project Structure
-
-VoltVision/
-├── frontend/ (React App)
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── services/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── state/
-│   │   └── utils/
-│   ├── models/
-│   └── requirements.txt
-└── README.md
-
----
-
-# 🔐 Authentication Flow
-
-1. User Signup  
-2. Password hashed with bcrypt  
-3. JWT issued  
-4. Protected routes require token  
-5. User-specific energy data retrieved  
-
----
-
-# 💡 Key Innovation
-
-VoltVision uses:
-
-- **Predictive AI** to forecast energy usage  
-- **Unsupervised AI** to detect hidden anomalies  
-- **Rule-Based Optimization Engine** to generate actionable insights  
-- **LLM-powered Chatbot** for natural language explanations  
-
-It does not just display charts.  
-It makes decisions.
-
----
-
-# 🌍 Impact
-
-- Lower electricity bills  
-- Reduced peak grid stress  
-- Improved energy awareness  
-- Sustainable appliance usage habits  
-
----
-
-# 🚀 How to Run
-
-## Backend
-
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app –reload
-
-## Frontend
-
-cd frontend
-npm install
-npm run dev
-
----
-
-# 🏆 Team
-
-**Team Axios**  
-SIC - Code4Society Competition  
-
-
+```
+VoltVision
+├─ README.md
+├─ backend
+│  ├─ app
+│  │  ├─ __init__.py
+│  │  ├─ api
+│  │  │  ├─ __init__.py
+│  │  │  └─ routes.py
+│  │  ├─ core
+│  │  │  ├─ __init__.py
+│  │  │  ├─ auth.py
+│  │  │  ├─ config.py
+│  │  │  └─ gemini_config.py
+│  │  ├─ data
+│  │  │  └─ household_energy_inference_test_with_datetime.csv
+│  │  ├─ db
+│  │  │  ├─ data_crud.py
+│  │  │  ├─ database.py
+│  │  │  └─ user_crud.py
+│  │  ├─ main.py
+│  │  ├─ schemas
+│  │  │  ├─ __init__.py
+│  │  │  └─ schemas.py
+│  │  ├─ services
+│  │  │  ├─ __init__.py
+│  │  │  ├─ ai_service.py
+│  │  │  ├─ analytics_service.py
+│  │  │  ├─ anomaly_service.py
+│  │  │  ├─ email_service.py
+│  │  │  ├─ forecasting_service.py
+│  │  │  ├─ insight_summary_service.py
+│  │  │  ├─ optimization_service.py
+│  │  │  ├─ recommendation_engine.py
+│  │  │  └─ tariff_service.py
+│  │  ├─ state
+│  │  │  ├─ __init__.py
+│  │  │  └─ api_usage_tracker.py
+│  │  └─ utils
+│  │     ├─ __init__.py
+│  │     ├─ data_cleaning.py
+│  │     ├─ feature_engineering.py
+│  │     └─ peak_detection.py
+│  ├─ backend.md
+│  ├─ models
+│  │  ├─ isolation_forest_anomaly.pkl
+│  │  └─ rf_energy_predictor.pkl
+│  ├─ requirements.txt
+│  ├─ run.sh
+│  └─ structure.md
+├─ docs
+├─ frontend
+│  ├─ .vite
+│  │  └─ deps
+│  │     ├─ _metadata.json
+│  │     └─ package.json
+│  ├─ README.md
+│  ├─ bun.lock
+│  ├─ bun.lockb
+│  ├─ components.json
+│  ├─ eslint.config.js
+│  ├─ index.html
+│  ├─ package-lock.json
+│  ├─ package.json
+│  ├─ postcss.config.js
+│  ├─ public
+│  │  ├─ favicon.ico
+│  │  ├─ placeholder.svg
+│  │  └─ robots.txt
+│  ├─ src
+│  │  ├─ App.css
+│  │  ├─ App.tsx
+│  │  ├─ components
+│  │  │  ├─ AnomalyChart.tsx
+│  │  │  ├─ ApplianceForm.tsx
+│  │  │  ├─ CostCard.tsx
+│  │  │  ├─ CurrentTariffCard.tsx
+│  │  │  ├─ DataUpload.tsx
+│  │  │  ├─ EnergyChatbot.tsx
+│  │  │  ├─ GridStressCard.tsx
+│  │  │  ├─ NavLink.tsx
+│  │  │  ├─ PeakSummary.tsx
+│  │  │  ├─ RecommendationCard.tsx
+│  │  │  ├─ SavingsSummary.tsx
+│  │  │  ├─ SmartRecommendations.tsx
+│  │  │  ├─ UsageChart.tsx
+│  │  │  └─ ui
+│  │  │     ├─ accordion.tsx
+│  │  │     ├─ alert-dialog.tsx
+│  │  │     ├─ alert.tsx
+│  │  │     ├─ aspect-ratio.tsx
+│  │  │     ├─ avatar.tsx
+│  │  │     ├─ badge.tsx
+│  │  │     ├─ breadcrumb.tsx
+│  │  │     ├─ button.tsx
+│  │  │     ├─ calendar.tsx
+│  │  │     ├─ card.tsx
+│  │  │     ├─ carousel.tsx
+│  │  │     ├─ chart.tsx
+│  │  │     ├─ checkbox.tsx
+│  │  │     ├─ collapsible.tsx
+│  │  │     ├─ command.tsx
+│  │  │     ├─ context-menu.tsx
+│  │  │     ├─ dialog.tsx
+│  │  │     ├─ drawer.tsx
+│  │  │     ├─ dropdown-menu.tsx
+│  │  │     ├─ form.tsx
+│  │  │     ├─ hover-card.tsx
+│  │  │     ├─ input-otp.tsx
+│  │  │     ├─ input.tsx
+│  │  │     ├─ label.tsx
+│  │  │     ├─ menubar.tsx
+│  │  │     ├─ navigation-menu.tsx
+│  │  │     ├─ pagination.tsx
+│  │  │     ├─ popover.tsx
+│  │  │     ├─ progress.tsx
+│  │  │     ├─ radio-group.tsx
+│  │  │     ├─ resizable.tsx
+│  │  │     ├─ scroll-area.tsx
+│  │  │     ├─ select.tsx
+│  │  │     ├─ separator.tsx
+│  │  │     ├─ sheet.tsx
+│  │  │     ├─ sidebar.tsx
+│  │  │     ├─ skeleton.tsx
+│  │  │     ├─ slider.tsx
+│  │  │     ├─ sonner.tsx
+│  │  │     ├─ switch.tsx
+│  │  │     ├─ table.tsx
+│  │  │     ├─ tabs.tsx
+│  │  │     ├─ textarea.tsx
+│  │  │     ├─ toast.tsx
+│  │  │     ├─ toaster.tsx
+│  │  │     ├─ toggle-group.tsx
+│  │  │     ├─ toggle.tsx
+│  │  │     ├─ tooltip.tsx
+│  │  │     └─ use-toast.ts
+│  │  ├─ context
+│  │  │  └─ AuthContext.tsx
+│  │  ├─ hooks
+│  │  │  ├─ use-mobile.tsx
+│  │  │  └─ use-toast.ts
+│  │  ├─ index.css
+│  │  ├─ lib
+│  │  │  └─ utils.ts
+│  │  ├─ main.tsx
+│  │  ├─ pages
+│  │  │  ├─ About.tsx
+│  │  │  ├─ Contact.tsx
+│  │  │  ├─ Index.tsx
+│  │  │  ├─ Login.tsx
+│  │  │  ├─ NotFound.tsx
+│  │  │  └─ Signup.tsx
+│  │  ├─ services
+│  │  │  ├─ api.ts
+│  │  │  └─ apiBase.ts
+│  │  ├─ test
+│  │  │  ├─ example.test.ts
+│  │  │  └─ setup.ts
+│  │  └─ vite-env.d.ts
+│  ├─ tailwind.config.ts
+│  ├─ tsconfig.app.json
+│  ├─ tsconfig.json
+│  ├─ tsconfig.node.json
+│  ├─ vite.config.ts
+│  └─ vitest.config.ts
+├─ projectstructure.md
+└─ runtime.txt
+
+```
