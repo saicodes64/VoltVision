@@ -10,7 +10,7 @@ from app.schemas.schemas import (
 )
 from app.core.auth import get_current_user
 from app.db.user_crud import create_user, authenticate_user
-from app.db.data_crud import save_user_data, get_user_data, get_latest_24h_data
+from app.db.data_crud import save_user_data, get_user_data, get_latest_24h_data, clear_user_data
 from app.utils.data_cleaning import clean_csv_data
 from app.services.analytics_service import get_usage_analytics
 from app.services.forecasting_service import forecasting_service
@@ -91,6 +91,19 @@ async def upload_data(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+# ──────────────────────────────────────────
+# 1b. DELETE /api/clear-data
+# ──────────────────────────────────────────
+
+@router.delete("/clear-data")
+async def clear_data(user_id: str = Depends(get_current_user)):
+    """Delete all energy data for the authenticated user. Requires JWT Bearer token."""
+    result = clear_user_data(user_id)
+    if "error" in result:
+        raise HTTPException(status_code=500, detail=result["error"])
+    return {"message": "All data cleared", "deleted_count": result.get("deleted_count", 0)}
 
 
 # ──────────────────────────────────────────
@@ -197,62 +210,59 @@ async def optimize_appliance_endpoint(
     request: ApplianceOptimizeRequest,
     user_id: str = Depends(get_current_user),
 ):
-    """
-    Deterministic appliance optimization.
-    Finds the cheapest hour from forecast to run the appliance.
-    No LLM used — pure slab-based math.
-    """
     from datetime import datetime, timedelta
     from app.utils.peak_detection import classify_grid_stress
 
     all_data = get_user_data(user_id)
     predictions = forecasting_service.predict_next_24h(all_data)
 
-    # Current monthly usage for slab context
     monthly_units = sum(h.get("actual_kwh", 0) for h in all_data) if all_data else 0
-    current_rate = get_slab_rate(monthly_units)
 
     energy_per_run = request.appliance_kwh * request.duration_hours
     now_hour = datetime.now().hour
 
-    # Simulate running appliance in each of the 24 forecast hours
     best_hour_index = 0
     best_cost = float("inf")
-    hourly_costs = []
+    hourly_results = []
 
-    for i, pred in enumerate(predictions):
-        # Hypothetical new monthly total if we add this appliance run
+    for i, base_load in enumerate(predictions):
+        simulated_hour_load = base_load + energy_per_run
+
         simulated_monthly = monthly_units + energy_per_run
-        rate_for_hour = get_slab_rate(simulated_monthly)
-        hour_cost = energy_per_run * rate_for_hour
-        hourly_costs.append(hour_cost)
+        slab_rate = get_slab_rate(simulated_monthly)
+
+        hour_cost = simulated_hour_load * slab_rate
+        grid_stress = classify_grid_stress(simulated_hour_load)
+
+        hourly_results.append({
+            "hour_index": i,
+            "base_load": base_load,
+            "simulated_load": simulated_hour_load,
+            "cost": hour_cost,
+            "grid_stress": grid_stress,
+        })
+
         if hour_cost < best_cost:
             best_cost = hour_cost
             best_hour_index = i
 
-    # Cost if run at current moment (using now's forecast index = 0)
-    cost_now = hourly_costs[0] if hourly_costs else energy_per_run * current_rate
+    # Cost if run immediately
+    current_base = predictions[0]
+    cost_now = (current_base + energy_per_run) * get_slab_rate(monthly_units)
 
     best_hour_val = (now_hour + best_hour_index + 1) % 24
     savings = round(cost_now - best_cost, 2)
-
-    # Slab impact check: does running the appliance push into next slab?
-    new_monthly = monthly_units + energy_per_run
-    current_slab = get_slab_name(monthly_units)
-    new_slab = get_slab_name(new_monthly)
-    slab_impact = "Warning: Crosses to next slab" if new_slab != current_slab else "Safe"
 
     return {
         "best_hour": f"{best_hour_val:02d}:00",
         "cost_if_run_now": round(cost_now, 2),
         "cost_if_run_at_best_time": round(best_cost, 2),
-        "savings": max(0.0, savings),
-        "slab_impact": slab_impact,
+        "savings": max(0, savings),
+        "peak_load_at_best_hour": round(hourly_results[best_hour_index]["simulated_load"], 2),
+        "grid_stress": hourly_results[best_hour_index]["grid_stress"],
         "appliance_name": request.appliance_name,
         "energy_per_run_kwh": round(energy_per_run, 2),
     }
-
-
 # ──────────────────────────────────────────
 # 7. POST /api/chat
 # ──────────────────────────────────────────
