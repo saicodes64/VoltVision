@@ -18,14 +18,13 @@ CORS_ORIGINS = [
     "*",
 ]
 
-# Tariff slabs (Indian residential typical)
+# Tariff slabs (Indian residential — per prompt specification)
 TARIFF_SLABS = [
-    {"min": 0, "max": 100, "rate": 3.25},
-    {"min": 101, "max": 200, "rate": 4.70},
-    {"min": 201, "max": 300, "rate": 6.30},
-    {"min": 301, "max": 400, "rate": 7.10},
-    {"min": 401, "max": 500, "rate": 7.60},
-    {"min": 501, "max": float("inf"), "rate": 8.50},
+    {"min": 0,    "max": 100,          "rate": 4.28,  "label": "0-100"},
+    {"min": 101,  "max": 300,          "rate": 11.10, "label": "101-300"},
+    {"min": 301,  "max": 500,          "rate": 15.33, "label": "301-500"},
+    {"min": 501,  "max": 1000,         "rate": 17.68, "label": "501-1000"},
+    {"min": 1001, "max": float("inf"), "rate": 17.68, "label": ">1000"},
 ]
 
 # Fixed charges per month

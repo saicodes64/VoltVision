@@ -53,10 +53,15 @@ class UsageAnalyticsResponse(BaseModel):
     averageHourlyUsage: float
 
 
-# --- Forecast ---
+# --- Forecast (enriched with tariff info) ---
 class ForecastResponse(BaseModel):
     hourlyData: List[HourlyData]
     totalPredicted: float
+    current_month_units: float
+    current_slab: str
+    marginal_cost_per_unit: float
+    slab_risk: str
+    units_to_next_slab: Optional[int] = None
 
 
 # --- Cost ---
@@ -69,7 +74,7 @@ class CostResponse(BaseModel):
     slabBreakdown: Optional[List[dict]] = None
 
 
-# --- Optimize ---
+# --- Optimize (legacy /optimize endpoint) ---
 class OptimizeRequest(BaseModel):
     name: str
     type: str = "home"
@@ -99,6 +104,21 @@ class SavingsData(BaseModel):
 class OptimizeResponse(BaseModel):
     recommendation: Recommendation
     savings: SavingsData
+
+
+# --- Appliance Optimizer (new deterministic endpoint) ---
+class ApplianceOptimizeRequest(BaseModel):
+    appliance_name: str
+    appliance_kwh: float
+    duration_hours: float
+
+
+class ApplianceOptimizeResponse(BaseModel):
+    best_hour: str
+    cost_if_run_now: float
+    cost_if_run_at_best_time: float
+    savings: float
+    slab_impact: str
 
 
 # --- Chat ---

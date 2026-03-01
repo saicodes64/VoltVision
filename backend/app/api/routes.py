@@ -6,7 +6,7 @@ Authentication uses JWT Bearer tokens via Depends(get_current_user).
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from app.schemas.schemas import (
     UploadResponse, AuthResponse, UserAuth, ChatRequest, ChatResponse,
-    DashboardSummary, OptimizeRequest,
+    DashboardSummary, OptimizeRequest, ApplianceOptimizeRequest,
 )
 from app.core.auth import get_current_user
 from app.db.user_crud import create_user, authenticate_user
@@ -16,7 +16,10 @@ from app.services.analytics_service import get_usage_analytics
 from app.services.forecasting_service import forecasting_service
 from app.services.anomaly_service import anomaly_service
 from app.services.recommendation_engine import generate_recommendations
-from app.services.tariff_service import calculate_cost
+from app.services.tariff_service import (
+    calculate_cost, get_slab_rate, get_slab_name,
+    calculate_marginal_cost, calculate_slab_risk,
+)
 from app.services.optimization_service import optimize_appliance, get_default_savings
 from app.services.ai_service import ai_service
 
@@ -108,12 +111,19 @@ async def usage_analytics(user_id: str = Depends(get_current_user)):
 
 @router.get("/forecast")
 async def forecast(user_id: str = Depends(get_current_user)):
-    """Get next 24-hour energy usage forecast. Requires JWT Bearer token."""
+    """Get next 24-hour energy usage forecast with tariff slab info."""
+    from datetime import datetime, timedelta
+    from app.utils.peak_detection import classify_grid_stress
+
     all_data = get_user_data(user_id)
     predictions = forecasting_service.predict_next_24h(all_data)
 
-    from datetime import datetime, timedelta
-    from app.utils.peak_detection import classify_grid_stress
+    # Compute monthly usage to determine current slab
+    monthly_units = sum(h.get("actual_kwh", 0) for h in all_data) if all_data else 0
+    slab_rate = get_slab_rate(monthly_units)
+    slab_name = get_slab_name(monthly_units)
+    marginal_rate = calculate_marginal_cost(monthly_units)
+    slab_risk_data = calculate_slab_risk(monthly_units)
 
     now = datetime.now().replace(minute=0, second=0, microsecond=0)
     latest = get_latest_24h_data(user_id)
@@ -130,11 +140,19 @@ async def forecast(user_id: str = Depends(get_current_user)):
             "label": f"{hour:02d}:00",
             "actual": round(actual, 2),
             "predicted": round(pred, 2),
-            "cost": round(pred * 6.5, 2),
+            "cost": round(pred * slab_rate, 2),  # now uses real slab rate
             "gridLoad": grid_load,
         })
 
-    return {"hourlyData": hourly_data, "totalPredicted": round(sum(predictions), 2)}
+    return {
+        "hourlyData": hourly_data,
+        "totalPredicted": round(sum(predictions), 2),
+        "current_month_units": round(monthly_units, 1),
+        "current_slab": slab_name,
+        "marginal_cost_per_unit": marginal_rate,
+        "slab_risk": slab_risk_data["risk"],
+        "units_to_next_slab": slab_risk_data["units_to_next_slab"],
+    }
 
 
 # ──────────────────────────────────────────
@@ -171,7 +189,72 @@ async def optimize(
 
 
 # ──────────────────────────────────────────
-# 6. POST /api/chat
+# 6. POST /api/optimize-appliance
+# ──────────────────────────────────────────
+
+@router.post("/optimize-appliance")
+async def optimize_appliance_endpoint(
+    request: ApplianceOptimizeRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """
+    Deterministic appliance optimization.
+    Finds the cheapest hour from forecast to run the appliance.
+    No LLM used — pure slab-based math.
+    """
+    from datetime import datetime, timedelta
+    from app.utils.peak_detection import classify_grid_stress
+
+    all_data = get_user_data(user_id)
+    predictions = forecasting_service.predict_next_24h(all_data)
+
+    # Current monthly usage for slab context
+    monthly_units = sum(h.get("actual_kwh", 0) for h in all_data) if all_data else 0
+    current_rate = get_slab_rate(monthly_units)
+
+    energy_per_run = request.appliance_kwh * request.duration_hours
+    now_hour = datetime.now().hour
+
+    # Simulate running appliance in each of the 24 forecast hours
+    best_hour_index = 0
+    best_cost = float("inf")
+    hourly_costs = []
+
+    for i, pred in enumerate(predictions):
+        # Hypothetical new monthly total if we add this appliance run
+        simulated_monthly = monthly_units + energy_per_run
+        rate_for_hour = get_slab_rate(simulated_monthly)
+        hour_cost = energy_per_run * rate_for_hour
+        hourly_costs.append(hour_cost)
+        if hour_cost < best_cost:
+            best_cost = hour_cost
+            best_hour_index = i
+
+    # Cost if run at current moment (using now's forecast index = 0)
+    cost_now = hourly_costs[0] if hourly_costs else energy_per_run * current_rate
+
+    best_hour_val = (now_hour + best_hour_index + 1) % 24
+    savings = round(cost_now - best_cost, 2)
+
+    # Slab impact check: does running the appliance push into next slab?
+    new_monthly = monthly_units + energy_per_run
+    current_slab = get_slab_name(monthly_units)
+    new_slab = get_slab_name(new_monthly)
+    slab_impact = "Warning: Crosses to next slab" if new_slab != current_slab else "Safe"
+
+    return {
+        "best_hour": f"{best_hour_val:02d}:00",
+        "cost_if_run_now": round(cost_now, 2),
+        "cost_if_run_at_best_time": round(best_cost, 2),
+        "savings": max(0.0, savings),
+        "slab_impact": slab_impact,
+        "appliance_name": request.appliance_name,
+        "energy_per_run_kwh": round(energy_per_run, 2),
+    }
+
+
+# ──────────────────────────────────────────
+# 7. POST /api/chat
 # ──────────────────────────────────────────
 
 @router.post("/chat", response_model=ChatResponse)

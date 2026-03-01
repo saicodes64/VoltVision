@@ -12,6 +12,7 @@ import EnergyChatbot from '@/components/EnergyChatbot';
 import DataUpload from '@/components/DataUpload';
 import AnomalyChart from '@/components/AnomalyChart';
 import SmartRecommendations from '@/components/SmartRecommendations';
+import CurrentTariffCard from '@/components/CurrentTariffCard';
 import { api, type DashboardSummary } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 
@@ -138,6 +139,7 @@ const Index = () => {
 
           {/* Right Column – Optimization */}
           <div className="space-y-6">
+            <CurrentTariffCard key={`tariff-${refreshKey}`} />
             <SmartRecommendations key={`smart-${refreshKey}`} />
             <CostCard key={`cost-${refreshKey}`} />
             <ApplianceForm key={`form-${refreshKey}`} />
