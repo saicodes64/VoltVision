@@ -1,7 +1,11 @@
 // VoltVision API Service — connects to FastAPI backend
 // Authenticated requests automatically attach the JWT Bearer token from localStorage.
+//
+// Set VITE_API_BASE_URL in your .env (or Render env vars) to point at the backend.
+// Example: VITE_API_BASE_URL=https://voltvision-backend.onrender.com
+// Leave empty in local dev if using the Vite proxy in vite.config.ts.
 
-const API_BASE = '/api';
+const API_BASE = `${import.meta.env.VITE_API_BASE_URL ?? ''}/api`;
 const STORAGE_KEY = 'vv_auth';
 
 // ── Auth helpers ────────────────────────────────────────
@@ -239,7 +243,7 @@ export const api = {
       });
       return res.reply;
     } catch {
-      return "I'm having trouble connecting to the server. Please make sure the backend is running on port 8000.";
+      return "I'm having trouble connecting to the server. Please check your connection and try again.";
     }
   },
 

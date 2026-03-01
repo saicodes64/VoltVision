@@ -9,14 +9,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 MODEL_DIR = BASE_DIR / "models"
 RF_MODEL_PATH = MODEL_DIR / "rf_energy_predictor.pkl"
 
-# CORS
-CORS_ORIGINS = [
+# CORS — read from env in production, fall back to local dev origins
+_frontend_url = os.getenv("FRONTEND_URL", "").strip().rstrip("/")
+CORS_ORIGINS = list(filter(None, [
     "http://localhost:8080",
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:8080",
-    "*",
-]
+    _frontend_url if _frontend_url else None,   # production Render URL
+]))
 
 # Tariff slabs (Indian residential — per prompt specification)
 TARIFF_SLABS = [

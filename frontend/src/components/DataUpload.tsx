@@ -3,6 +3,7 @@ import {
     Upload, FileUp, CheckCircle2, AlertCircle, Loader2,
     X, RefreshCw, Download, Trash2
 } from 'lucide-react';
+import { apiUrl, getAuthHeaders } from '@/services/apiBase';
 
 interface UploadResult {
     message: string;
@@ -10,15 +11,6 @@ interface UploadResult {
     date_range?: string;
 }
 
-function getAuthHeaders(): Record<string, string> {
-    try {
-        const raw = localStorage.getItem('vv_auth');
-        const token = raw ? JSON.parse(raw)?.token : null;
-        return token ? { Authorization: `Bearer ${token}` } : {};
-    } catch {
-        return {};
-    }
-}
 
 const DataUpload = ({ onUploadSuccess }: { onUploadSuccess: () => void }) => {
     const [dragging, setDragging] = useState(false);
@@ -42,7 +34,7 @@ const DataUpload = ({ onUploadSuccess }: { onUploadSuccess: () => void }) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const res = await fetch('/api/upload-data', {
+            const res = await fetch(apiUrl('/upload-data'), {
                 method: 'POST',
                 headers: getAuthHeaders(),
                 body: formData,
@@ -71,7 +63,7 @@ const DataUpload = ({ onUploadSuccess }: { onUploadSuccess: () => void }) => {
         setClearing(true);
         setClearConfirm(false);
         try {
-            const res = await fetch('/api/clear-data', {
+            const res = await fetch(apiUrl('/clear-data'), {
                 method: 'DELETE',
                 headers: getAuthHeaders(),
             });

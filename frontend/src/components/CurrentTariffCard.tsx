@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Zap, TrendingUp, AlertCircle, ShieldCheck, Info } from 'lucide-react';
+import { apiUrl, getAuthHeaders } from '@/services/apiBase';
 
 interface TariffData {
     current_month_units: number;
@@ -36,11 +37,8 @@ const CurrentTariffCard = () => {
     useEffect(() => {
         const fetchTariff = async () => {
             try {
-                const raw = localStorage.getItem('vv_auth');
-                const token = raw ? JSON.parse(raw)?.token : null;
-
-                const res = await fetch('/api/forecast', {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                const res = await fetch(apiUrl('/forecast'), {
+                    headers: getAuthHeaders(),
                 });
 
                 if (res.ok) {
@@ -152,8 +150,8 @@ const CurrentTariffCard = () => {
                                 <div
                                     key={s.range}
                                     className={`flex justify-between text-xs px-2 py-1 rounded ${data?.current_slab === s.range
-                                            ? 'bg-primary/15 text-primary font-semibold'
-                                            : 'text-muted-foreground'
+                                        ? 'bg-primary/15 text-primary font-semibold'
+                                        : 'text-muted-foreground'
                                         }`}
                                 >
                                     <span>{s.range} units</span>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Cpu, Loader2, Clock, TrendingDown, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { apiUrl, getAuthHeaders } from '@/services/apiBase';
 
 interface Appliance {
   label: string;
@@ -46,14 +47,11 @@ const ApplianceForm = () => {
     setResult(null);
 
     try {
-      const raw = localStorage.getItem('vv_auth');
-      const token = raw ? JSON.parse(raw)?.token : null;
-
-      const res = await fetch('/api/optimize-appliance', {
+      const res = await fetch(apiUrl('/optimize-appliance'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...getAuthHeaders(),
         },
         body: JSON.stringify({
           appliance_name: selectedAppliance,

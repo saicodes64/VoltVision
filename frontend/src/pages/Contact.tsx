@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Loader2, CheckCircle2, AlertCircle, ArrowLeft, Send } from 'lucide-react';
+import { apiUrl } from '@/services/apiBase';
 
 const Contact = () => {
     const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' });
@@ -17,7 +18,7 @@ const Contact = () => {
         setError(null);
 
         try {
-            const res = await fetch('/api/contact', {
+            const res = await fetch(apiUrl('/contact'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(form),
