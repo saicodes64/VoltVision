@@ -12,7 +12,13 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 load_dotenv()
 
-SECRET_KEY = os.getenv("JWT_SECRET_KEY", "change-me-to-a-very-long-random-secret-key")
+_JWT_SECRET = os.getenv("JWT_SECRET_KEY", "")
+if not _JWT_SECRET or _JWT_SECRET == "change-me-to-a-very-long-random-secret-key":
+    raise RuntimeError(
+        "JWT_SECRET_KEY is not set or is still using the placeholder. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+    )
+SECRET_KEY = _JWT_SECRET
 ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "10080"))  # 7 days default
 
